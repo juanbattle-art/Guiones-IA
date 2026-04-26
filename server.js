@@ -41,7 +41,7 @@ app.post("/generar", async (req, res) => {
   // 3. Leer la API key desde variables de entorno
   //    En Render: configurada en "Environment Variables"
   //    Localmente: exportar antes de correr → export ANTHROPIC_API_KEY=sk-ant-...
-  const apiKey = "sk-ant-api03-ChgYJuchPcPP_VszW4S1d2oKD8eEo_vh14EbMpw_nN1QsgjomQiVt97EvjTgPYSDE6WVBlUgamG9p2CyIlHkag-pbJnhQAA";
+  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
   if (!apiKey) {
     return res.status(500).json({
       error: "ANTHROPIC_API_KEY no configurada. Agregala como variable de entorno."
