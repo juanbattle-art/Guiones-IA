@@ -41,7 +41,7 @@ app.post("/generar", async (req, res) => {
   // 3. Leer la API key desde variables de entorno
   //    En Render: configurada en "Environment Variables"
   //    Localmente: exportar antes de correr → export ANTHROPIC_API_KEY=sk-ant-...
-  const apiKey = process.env.ANTHROPIC_API_KEY;
+  
   if (!apiKey) {
     return res.status(500).json({
       error: "ANTHROPIC_API_KEY no configurada. Agregala como variable de entorno."
