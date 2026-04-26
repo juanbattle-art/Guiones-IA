@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <!-- Hace que la app se vea bien en celulares -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Generador de Guiones IA</title>
+
+  <style>
+    /* ── VARIABLES DE COLOR ── */
+    :root {
+      --bg:      #0a0a0a;
+      --card:    #141414;
+      --border:  #242424;
+      --accent:  #f5e642;
+      --red:     #ff4d4d;
+      --text:    #efefef;
+      --muted:   #666666;
+      --radius:  12px;
+    }
+
+    /* ── RESET ── */
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    /* ── BASE ── */
+    body {
+      background: var(--bg);
+      color: var(--text);
+      /* Fuente del sistema — se ve nativa en iOS y Android */
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+      min-height: 100vh;
+      padding: 28px 16px 60px;
+    }
+
+    /* Limita el ancho — mobile-first centrado */
+    .container {
+      max-width: 480px;
+      margin: 0 auto;
+    }
+
+    /* ── HEADER ── */
+    header {
+      text-align: center;
+      margin-bottom: 28px;
+    }
+
+    header h1 {
+      font-size: 26px;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      margin-bottom: 6px;
+    }
+
+    header h1 em {
+      color: var(--accent);
+      font-style: normal;
+    }
+
+    header p {
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    /* ── TARJETA DEL FORMULARIO ── */
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    /* Cada campo con su label */
+    .campo label {
+      display: block;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+
+    /* Estilos compartidos para select e input */
+    select,
+    input[type="text"] {
+      width: 100%;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      font-family: inherit;
+      /* 16px mínimo evita el zoom automático en iOS */
+      font-size: 16px;
+      padding: 13px 14px;
+      outline: none;
+      transition: border-color 0.2s;
+      -webkit-appearance: none;
+      appearance: none;
+    }
+
+    select:focus,
+    input[type="text"]:focus {
+      border-color: var(--accent);
+    }
+
+    input::placeholder {
+      color: var(--muted);
+    }
+
+    /* ── BOTÓN GENERAR ── */
+    .btn-generar {
+      background: var(--accent);
+      color: #000;
+      border: none;
+      border-radius: var(--radius);
+      font-family: inherit;
+      font-size: 17px;
+      font-weight: 800;
+      padding: 15px;
+      width: 100%;
+      cursor: pointer;
+      transition: opacity 0.2s, transform 0.1s;
+      min-height: 52px; /* Área táctil generosa en móvil */
+    }
+
+    .btn-generar:hover:not(:disabled) { opacity: 0.88; }
+    .btn-generar:active:not(:disabled) { transform: scale(0.97); }
+    .btn-generar:disabled {
+      background: var(--border);
+      color: var(--muted);
+      cursor: not-allowed;
+    }
+
+    /* ── BARRA DE CARGA ANIMADA ── */
+    .barra-wrap {
+      height: 2px;
+      background: var(--border);
+      border-radius: 2px;
+      overflow: hidden;
+      display: none;
+    }
+
+    .barra-wrap.activa { display: block; }
+
+    .barra-fill {
+      height: 100%;
+      background: var(--accent);
+      animation: sweep 1.4s ease-in-out infinite;
+    }
+
+    @keyframes sweep {
+      0%   { width: 0%;   margin-left: 0;    }
+      50%  { width: 55%;  margin-left: 22%;  }
+      100% { width: 0%;   margin-left: 100%; }
+    }
+
+    /* ── MENSAJE DE ERROR ── */
+    .error {
+      color: var(--red);
+      font-size: 13px;
+      padding: 10px 14px;
+      background: rgba(255, 77, 77, 0.08);
+      border-radius: 8px;
+      border: 1px solid rgba(255, 77, 77, 0.2);
+      line-height: 1.5;
+      display: none;
+    }
+
+    .error.visible { display: block; }
+
+    /* ── TARJETA DE RESULTADO ── */
+    .resultado {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+      margin-top: 16px;
+      display: none;
+    }
+
+    .resultado.visible {
+      display: block;
+      animation: aparecer 0.3s ease;
+    }
+
+    @keyframes aparecer {
+      from { opacity: 0; transform: translateY(6px); }
+      to   { opacity: 1; transform: translateY(0);   }
+    }
+
+    .res-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+    }
+
+    .res-label {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: var(--accent);
+    }
+
+    .btn-copiar {
+      background: var(--border);
+      color: var(--text);
+      border: none;
+      border-radius: 6px;
+      font-family: inherit;
+      font-size: 13px;
+      padding: 7px 14px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .btn-copiar:hover { background: #333; }
+
+    /* Texto del guión — respeta saltos de línea */
+    .guion-texto {
+      font-size: 15px;
+      line-height: 1.8;
+      white-space: pre-wrap;
+    }
+
+    /* Etiquetas [HOOK], [DESARROLLO], etc. en amarillo */
+    .guion-texto .bloque {
+      display: block;
+      color: var(--accent);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 1.2px;
+      margin-top: 18px;
+      margin-bottom: 5px;
+    }
+
+    .guion-texto .bloque:first-child { margin-top: 0; }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <!-- HEADER -->
+  <header>
+    <h1>Guiones <em>IA</em></h1>
+    <p>Generador de guiones para Instagram Reels</p>
+  </header>
+
+  <!-- FORMULARIO -->
+  <div class="card">
+
+    <!-- Campo 1: Tipo de contenido -->
+    <div class="campo">
+      <label for="tipo">Tipo de contenido</label>
+      <select id="tipo">
+        <option value="motivacional">💪 Motivacional</option>
+        <option value="storytelling">📖 Storytelling / Historia personal</option>
+        <option value="educativo">🎓 Educativo / Tutorial</option>
+        <option value="ventas">💰 Ventas / Conversión</option>
+      </select>
+    </div>
+
+    <!-- Campo 2: Duración -->
+    <div class="campo">
+      <label for="duracion">Duración del video</label>
+      <select id="duracion">
+        <option value="15">⚡ 15 segundos</option>
+        <option value="30" selected>🎯 30 segundos — ideal para Reels</option>
+        <option value="60">🎬 60 segundos</option>
+      </select>
+    </div>
+
+    <!-- Campo 3: Tema -->
+    <div class="campo">
+      <label for="tema">Tema del video</label>
+      <input
+        type="text"
+        id="tema"
+        placeholder="Ej: cómo volver al gym después de una lesión"
+        autocorrect="on"
+        autocomplete="off"
+      >
+    </div>
+
+    <!-- Botón principal -->
+    <button class="btn-generar" id="btn-generar" onclick="generarGuion()">
+      ⚡ Generar guión
+    </button>
+
+    <!-- Barra de carga -->
+    <div class="barra-wrap" id="barra">
+      <div class="barra-fill"></div>
+    </div>
+
+    <!-- Mensaje de error -->
+    <div class="error" id="error"></div>
+
+  </div>
+
+  <!-- RESULTADO (oculto hasta que se genera) -->
+  <div class="resultado" id="resultado">
+    <div class="res-header">
+      <span class="res-label">🎬 Guión generado</span>
+      <button class="btn-copiar" id="btn-copiar" onclick="copiar()">Copiar</button>
+    </div>
+    <div class="guion-texto" id="guion-texto"></div>
+  </div>
+
+</div>
+
+<script>
+  // ── GENERAR GUIÓN ──────────────────────────────────────────
+  async function generarGuion() {
+    const tipo     = document.getElementById("tipo").value;
+    const duracion = document.getElementById("duracion").value;
+    const tema     = document.getElementById("tema").value.trim();
+
+    // Validar tema
+    if (!tema) {
+      mostrarError("✏️ Escribí el tema del video antes de continuar.");
+      return;
+    }
+
+    // Preparar UI
+    ocultarError();
+    ocultarResultado();
+    setLoading(true);
+
+    try {
+      // POST al servidor Express — él llama a Claude con la API key
+      const res = await fetch("/generar", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ tipo, duracion, tema }),
+      });
+
+      const datos = await res.json();
+
+      if (!res.ok) {
+        mostrarError("⚠️ " + (datos.error || "Error inesperado. Intentá de nuevo."));
+        return;
+      }
+
+      mostrarGuion(datos.guion);
+
+    } catch (err) {
+      mostrarError("🔌 No se pudo conectar con el servidor: " + err.message);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  // ── MOSTRAR GUIÓN FORMATEADO ────────────────────────────────
+  function mostrarGuion(texto) {
+    // Resaltar etiquetas [HOOK], [DESARROLLO], [CIERRE], [CTA]
+    const html = texto.replace(
+      /\[([A-ZÁÉÍÓÚÑ\s]+)\]/g,
+      '<span class="bloque">[$1]</span>'
+    );
+    document.getElementById("guion-texto").innerHTML = html;
+    document.getElementById("resultado").classList.add("visible");
+
+    // Scroll suave al resultado
+    setTimeout(() => {
+      document.getElementById("resultado").scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 100);
+  }
+
+  // ── COPIAR AL PORTAPAPELES ──────────────────────────────────
+  function copiar() {
+    const texto = document.getElementById("guion-texto").innerText;
+
+    navigator.clipboard.writeText(texto)
+      .then(() => {
+        const btn = document.getElementById("btn-copiar");
+        btn.textContent = "✓ Copiado!";
+        setTimeout(() => btn.textContent = "Copiar", 2000);
+      })
+      .catch(() => {
+        // Fallback para Safari y versiones antiguas
+        const ta = document.createElement("textarea");
+        ta.value = texto;
+        ta.style.cssText = "position:fixed;opacity:0;";
+        document.body.appendChild(ta);
+        ta.focus(); ta.select();
+        document.execCommand("copy");
+        document.body.removeChild(ta);
+      });
+  }
+
+  // ── HELPERS UI ──────────────────────────────────────────────
+  function setLoading(on) {
+    document.getElementById("barra").classList.toggle("activa", on);
+    const btn = document.getElementById("btn-generar");
+    btn.disabled    = on;
+    btn.textContent = on ? "Generando..." : "⚡ Generar guión";
+  }
+
+  function mostrarError(msg) {
+    const el = document.getElementById("error");
+    el.textContent = msg;
+    el.classList.add("visible");
+  }
+
+  function ocultarError()     { document.getElementById("error").classList.remove("visible"); }
+  function ocultarResultado() { document.getElementById("resultado").classList.remove("visible"); }
+
+  // Enter en el campo tema dispara la generación
+  document.getElementById("tema").addEventListener("keydown", e => {
+    if (e.key === "Enter") generarGuion();
+  });
+</script>
+</body>
+</html>
